@@ -1,0 +1,51 @@
+name: Deploy Pages ✨
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    name: Build MkDocs ✨
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+      - name: Install Meterial for MkDocs
+        run: pip install mkdocs-material
+      - name: Build Pages
+        run: mkdocs build
+      - name: Upload sources artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: source
+          path: ./
+  deploy:
+    name: Deploy site 🚀
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: Cloudflare Pages
+      url: https://docker.sownt.com
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: source
+      - name: Configure Git
+        run: |
+          git config --global user.name ${{ secrets.GIT_NAME }}
+          git config --global user.email ${{ secrets.GIT_EMAIL }}
+      - name: Deploy Pages
+        run: mkdocs gh-deploy --force
+      - name: Install SSH key
+        if: ${{ false }}
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.PRIVATE_KEY }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+          if_key_exists: replace
+      - name: Deploy Pages to my Server
+        if: ${{ false }}
+        run: scp -r ./* ${{ secrets.VULTR_USER }}@${{ secrets.VULTR_HOST }}:${{ secrets.SITE_PATH }}      
